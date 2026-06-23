@@ -5,6 +5,9 @@ const transcriptDiv = document.getElementById("transcript");
 const responseDiv = document.getElementById("response");
 const statusDiv = document.getElementById("status");
 
+let conversationActive = false;
+let isSpeaking = false;
+
 const SpeechRecognition =
     window.SpeechRecognition ||
     window.webkitSpeechRecognition;
@@ -25,16 +28,46 @@ if (!SpeechRecognition) {
 
     button.addEventListener("click", () => {
 
-        responseDiv.innerHTML = "";
-        statusDiv.innerHTML = "🎤 Listening...";
+        if (!conversationActive) {
 
-        button.classList.add("listening");
+            conversationActive = true;
 
-        recognition.start();
+            speechSynthesis.cancel();
+
+            statusDiv.innerHTML = "🎤 Listening...";
+
+            button.innerHTML = "⏹️";
+
+            button.classList.add("listening");
+
+            recognition.start();
+
+        } else {
+
+            conversationActive = false;
+
+            speechSynthesis.cancel();
+
+            recognition.stop();
+
+            statusDiv.innerHTML = "✅ Ready";
+
+            button.innerHTML = "🎤";
+
+            button.classList.remove("listening");
+
+            console.log("Conversation stopped");
+        }
 
     });
 
     recognition.onstart = () => {
+
+        speechSynthesis.cancel();
+
+        isSpeaking = false;
+
+        statusDiv.innerHTML = "🎤 Listening...";
 
         console.log("Listening started");
 
@@ -42,20 +75,34 @@ if (!SpeechRecognition) {
 
     recognition.onend = () => {
 
-        button.classList.remove("listening");
-
         console.log("Listening ended");
+
+        button.classList.remove("listening");
 
     };
 
     recognition.onerror = (event) => {
 
-        console.error("Speech Error:", event.error);
+        console.error(
+            "Speech Recognition Error:",
+            event.error
+        );
 
         statusDiv.innerHTML =
-            "❌ Speech recognition error";
+            "❌ Speech Recognition Error";
 
         button.classList.remove("listening");
+
+        if (conversationActive) {
+
+            setTimeout(() => {
+
+                try {
+                    recognition.start();
+                } catch {}
+
+            }, 1000);
+        }
 
     };
 
@@ -64,21 +111,22 @@ if (!SpeechRecognition) {
         const text =
             event.results[0][0].transcript;
 
-        console.log("User said:", text);
+        console.log("User:", text);
 
         transcriptDiv.innerHTML = text;
 
         statusDiv.innerHTML =
-            "⏳ Processing...";
+            "⏳ Thinking...";
 
         try {
 
             const response = await fetch(
-                "https://travelmate-voice-agent.onrender.com/chat",
+                "http://127.0.0.1:8000/chat",
                 {
                     method: "POST",
                     headers: {
-                        "Content-Type": "application/json"
+                        "Content-Type":
+                            "application/json"
                     },
                     body: JSON.stringify({
                         message: text
@@ -91,31 +139,90 @@ if (!SpeechRecognition) {
                 throw new Error(
                     `HTTP Error ${response.status}`
                 );
-
             }
 
             const data =
                 await response.json();
 
             console.log(
-                "Backend Response:",
-                data
+                "Assistant:",
+                data.response
             );
 
             responseDiv.innerHTML =
                 data.response;
 
-            statusDiv.innerHTML =
-                "✅ Ready";
+            const cleanText =
+                data.response
+                    .replace(/[*#`]/g, "")
+                    .replace(
+                        /[🎉🔥✨🚀😊😂👍❤️😍🥳]/g,
+                        ""
+                    )
+                    .replace(/\n/g, " ")
+                    .replace(/\s+/g, " ")
+                    .trim();
 
             const speech =
                 new SpeechSynthesisUtterance(
-                    data.response
+                    cleanText
                 );
 
             speech.rate = 1;
             speech.pitch = 1;
             speech.volume = 1;
+
+            statusDiv.innerHTML =
+                "🔊 Speaking...";
+
+            isSpeaking = true;
+
+            speech.onend = () => {
+
+                isSpeaking = false;
+
+                console.log(
+                    "Assistant finished speaking"
+                );
+
+                if (conversationActive) {
+
+                    statusDiv.innerHTML =
+                        "🎤 Listening...";
+
+                    button.classList.add(
+                        "listening"
+                    );
+
+                    setTimeout(() => {
+
+                        try {
+                            recognition.start();
+                        } catch (err) {
+                            console.log(err);
+                        }
+
+                    }, 300);
+                }
+            };
+
+            speech.onerror = () => {
+
+                isSpeaking = false;
+
+                if (conversationActive) {
+
+                    setTimeout(() => {
+
+                        try {
+                            recognition.start();
+                        } catch {}
+
+                    }, 300);
+                }
+            };
+
+            speechSynthesis.cancel();
 
             speechSynthesis.speak(
                 speech
@@ -124,7 +231,7 @@ if (!SpeechRecognition) {
         } catch (error) {
 
             console.error(
-                "Fetch Error:",
+                "Backend Error:",
                 error
             );
 
@@ -133,6 +240,17 @@ if (!SpeechRecognition) {
 
             statusDiv.innerHTML =
                 "❌ Backend Error";
+
+            if (conversationActive) {
+
+                setTimeout(() => {
+
+                    try {
+                        recognition.start();
+                    } catch {}
+
+                }, 1000);
+            }
         }
     };
 }
