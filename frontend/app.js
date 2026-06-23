@@ -29,7 +29,7 @@ if (!SpeechRecognition) {
 
     recognition.continuous = false;
     recognition.interimResults = false;
-    recognition.lang = "en-US";
+    recognition.lang = "en-IN";
 
     button.addEventListener("click", () => {
 
