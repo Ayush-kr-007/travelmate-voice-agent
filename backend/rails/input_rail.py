@@ -59,7 +59,6 @@ JAILBREAK_PATTERNS = [
     "ignore all instructions",
     "ignore your instructions",
     "developer mode",
-    "system prompt",
     "hidden prompt",
     "reveal prompt",
     "show prompt",
