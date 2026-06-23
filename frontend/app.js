@@ -126,7 +126,7 @@ if (!SpeechRecognition) {
         try {
 
             const response = await fetch(
-                "https://travelmate-voice-agent.onrender.com/",
+                "https://travelmate-voice-agent.onrender.com/chat",
                 {
                     method: "POST",
                     headers: {
