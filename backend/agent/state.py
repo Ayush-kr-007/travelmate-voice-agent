@@ -1,6 +1,6 @@
 from collections import defaultdict
 
-MAX_MESSAGES = 10
+MAX_MESSAGES = 6
 
 conversation_store = defaultdict(list)
 
