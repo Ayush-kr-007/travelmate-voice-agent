@@ -26,7 +26,9 @@ app.add_middleware(
 
 class ChatRequest(BaseModel):
     message: str
-
+    session_id: str
+class ResetRequest(BaseModel):
+    session_id: str
 
 @app.get("/")
 async def root():
@@ -51,9 +53,9 @@ async def chat(req: ChatRequest):
         }
 
     answer = generate_travel_response(
-        req.message
+        req.message,
+        req.session_id
     )
-
     answer = safe_output(
         answer
     )
@@ -63,10 +65,13 @@ async def chat(req: ChatRequest):
         "blocked": False
     }
 
-@app.post("/reset")
-async def reset_chat():
 
-    clear_history()
+
+
+@app.post("/reset")
+async def reset_chat(req: ResetRequest):
+
+    clear_history(req.session_id)
 
     return {
         "status": "memory cleared"

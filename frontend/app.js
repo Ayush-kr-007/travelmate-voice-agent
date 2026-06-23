@@ -1,5 +1,10 @@
 console.log("TravelMate Loaded");
+const sessionId = crypto.randomUUID();
 
+console.log(
+    "Session ID:",
+    sessionId
+);
 const button = document.getElementById("talkBtn");
 const transcriptDiv = document.getElementById("transcript");
 const responseDiv = document.getElementById("response");
@@ -121,16 +126,17 @@ if (!SpeechRecognition) {
         try {
 
             const response = await fetch(
-                "https://travelmate-voice-agent.onrender.com/chat",
+                "http://127.0.0.1:8000/chat",
                 {
                     method: "POST",
                     headers: {
                         "Content-Type":
                             "application/json"
                     },
-                    body: JSON.stringify({
-                        message: text
-                    })
+                     body: JSON.stringify({
+                     message: text,
+                     session_id: sessionId
+                })
                 }
             );
 

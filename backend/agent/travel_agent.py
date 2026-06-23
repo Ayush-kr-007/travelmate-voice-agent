@@ -4,14 +4,19 @@ from groq import Groq
 from google.genai import errors
 from backend.prompt import TRAVEL_SYSTEM_PROMPT
 from backend.services.gemini_client import client as gemini_client
-from backend.agent.state import add_message, get_history
-
+from backend.agent.state import (
+    add_message,
+    get_history
+)
 # Initialize the Groq client separately
 groq_client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
 
-def generate_travel_response(user_message: str):
+def  generate_travel_response(
+    user_message: str,
+    session_id: str
+    ):
     # 1. Fetch and compile conversation history
-    history = get_history()
+    history = get_history(session_id)
     conversation = ""
     for msg in history:
         conversation += f"{msg['role']}: {msg['content']}\n"
@@ -40,8 +45,17 @@ Assistant:
         answer = response.choices[0].message.content
         
         # Save history on success
-        add_message("user", user_message)
-        add_message("assistant", answer)
+        add_message(
+            session_id,
+            "user",
+            user_message
+        )
+
+        add_message(
+            session_id,
+            "assistant",
+            answer
+        )
         return answer
 
     except Exception as groq_error:
